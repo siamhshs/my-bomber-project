@@ -1,17 +1,27 @@
 import telebot
 from telebot import types
+import os
+import threading
+from flask import Flask
 
-# আপনার বট টোকেন
+# ১. ফ্লস্ক (Flask) সার্ভার সেটআপ
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is Running Online! 🚀"
+
+# ২. টেলিগ্রাম বট সেটআপ
 BOT_TOKEN = "8417159517:AAEKrjhHQMncuvBcZgnQl368nz4sgNF9uY4"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # ইউজার ডেটা স্টোর করার জন্য ডিকশনারি
 user_data = {}
 
-# ১. মেইন মেনু ফাংশন
+# মেইন মেনু ফাংশন
 def show_main_menu(chat_id, name, user_id):
     welcome_text = (
-        f"💣 **sms_bomber**\n"
+        f"💣 **BOMBER MASTER PRO**\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"👋 **WELCOME, {name}!**\n"
         f"🆔 **USER ID:** `{user_id}`\n\n"
@@ -26,7 +36,6 @@ def show_main_menu(chat_id, name, user_id):
     markup.add(btn1, btn2, btn3)
     bot.send_message(chat_id, welcome_text, reply_markup=markup, parse_mode="Markdown")
 
-# ২. স্টার্ট কমান্ড
 @bot.message_handler(commands=['start'])
 def welcome(message):
     user_id = message.from_user.id
@@ -35,7 +44,6 @@ def welcome(message):
     
     show_main_menu(message.chat.id, message.from_user.first_name, user_id)
 
-# ৩. বাটন হ্যান্ডলার
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     chat_id = call.message.chat.id
@@ -47,7 +55,6 @@ def callback_query(call):
         bot.register_next_step_handler(msg, get_number)
 
     elif call.data == "referral":
-        # আপনার সঠিক ইউজারনেম @Sms_bomber914_bot এখানে যুক্ত করা হয়েছে
         refer_link = f"https://t.me/Sms_bomber914_bot?start={user_id}"
         bot.send_message(chat_id, f"🔗 **আপনার রেফার লিঙ্ক:**\n`{refer_link}`", 
                          reply_markup=back_inline_button())
@@ -64,7 +71,6 @@ def callback_query(call):
         bot.delete_message(chat_id, call.message.message_id)
         show_main_menu(chat_id, call.from_user.first_name, user_id)
 
-# ৪. ইনপুট হ্যান্ডলিং প্রসেস (নম্বর -> অ্যামাউন্ট -> কনফার্ম)
 def get_number(message):
     user_id = message.from_user.id
     user_data[user_id]['temp_num'] = message.text
@@ -75,7 +81,6 @@ def get_number(message):
 def get_amount(message):
     user_id = message.from_user.id
     user_data[user_id]['temp_count'] = message.text
-    
     num = user_data[user_id]['temp_num']
     amt = user_data[user_id]['temp_count']
     
@@ -92,18 +97,24 @@ def confirm_bomb(call):
     num = user_data[user_id]['temp_num']
     amt = int(user_data[user_id]['temp_count'])
     
-    # ডেটা আপডেট করা
     user_data[user_id]['total_bombs'] += amt
     user_data[user_id]['last_number'] = num
     
     bot.edit_message_text(f"🚀 {num} নম্বরে বোম্বিং শুরু হয়েছে...", call.message.chat.id, call.message.message_id)
-    # এখানে আপনার ওটিপি পাঠানোর লুপটি যুক্ত করতে পারেন
 
-# ৫. ব্যাক বাটন জেনারেটর
 def back_inline_button():
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("🔙 BACK", callback_data="back"))
     return markup
 
-print("Bot @Sms_bomber914_bot is running...")
-bot.infinity_polling()
+# ৩. বট এবং সার্ভার একসাথে চালানোর লজিক
+def run_bot():
+    bot.infinity_polling()
+
+if __name__ == "__main__":
+    # ব্যাকগ্রাউন্ডে বট চালানোর জন্য Thread
+    threading.Thread(target=run_bot).start()
+    
+    # Render-এর পোর্টে Flask চালানো
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
