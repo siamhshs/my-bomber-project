@@ -2,22 +2,22 @@ import os
 import telebot
 from flask import Flask, request
 
-# আপনার টোকেন এবং বট সেটআপ
+# আপনার দেওয়া টোকেন এবং বট ইনফো
 TOKEN = "8417159517:AAEKrjhHQMncuvBcZgnQl368nz4sgNF9uY4"
 bot = telebot.TeleBot(TOKEN)
 server = Flask(__name__)
 
-# ইউজার ডেটা স্টোর
+# ইউজার ডেটা স্টোর করার ডিকশনারি
 user_data = {}
 
-# মেইন মেনু বাটন ফাংশন
+# মেইন মেনু ফাংশন (সবগুলো বাটনসহ)
 def get_main_menu(name, user_id):
     welcome_text = (
         f"💣 **BOMBER MASTER PRO**\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"👋 **WELCOME, {name}!**\n"
         f"🆔 **USER ID:** `{user_id}`\n\n"
-        f"👇 **একটি অপশন সিলেক্ট করুন:**"
+        f"👇 **নিচের বাটন থেকে একটি অপশন বেছে নিন:**"
     )
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("💣 START BOMB", callback_data="start_bomb")
@@ -26,7 +26,7 @@ def get_main_menu(name, user_id):
     markup.add(btn1, btn2, btn3)
     return welcome_text, markup
 
-# কমান্ড হ্যান্ডলার
+# স্টার্ট কমান্ড
 @bot.message_handler(commands=['start'])
 def start(message):
     text, markup = get_main_menu(message.from_user.first_name, message.from_user.id)
@@ -36,12 +36,12 @@ def start(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == "start_bomb":
-        msg = bot.send_message(call.message.chat.id, "📞 **টার্গেট নম্বরটি দিন:**")
+        msg = bot.send_message(call.message.chat.id, "📞 **টার্গেট নম্বরটি দিন (যেমন: 017...):**")
         bot.register_next_step_handler(msg, get_num)
     elif call.data == "referral":
-        bot.send_message(call.message.chat.id, f"🔗 রেফার লিঙ্ক: https://t.me/Sms_bomber914_bot?start={call.from_user.id}")
+        bot.send_message(call.message.chat.id, f"🔗 রেফার লিঙ্ক: http://t.me/Sms_bomber914_bot?start={call.from_user.id}")
     elif call.data == "my_info":
-        bot.send_message(call.message.chat.id, f"👤 আপনার আইডি: {call.from_user.id}\n🔥 মোট বোম্বিং: ০")
+        bot.send_message(call.message.chat.id, f"👤 আইডি: {call.from_user.id}\n🔥 মোট বোম্বিং: ০")
 
 def get_num(message):
     user_data[message.from_user.id] = {'num': message.text}
@@ -51,9 +51,9 @@ def get_num(message):
 def get_amt(message):
     num = user_data[message.from_user.id]['num']
     amt = message.text
-    bot.send_message(message.chat.id, f"🚀 {num} নম্বরে {amt}টি বোম্বিং শুরু হচ্ছে...")
+    bot.send_message(message.chat.id, f"🚀 {num} নম্বরে {amt}টি ওটিপি পাঠানোর প্রসেস শুরু হচ্ছে...")
 
-# Render-এর জন্য Webhook সেটআপ (এটিই আসল সমাধান)
+# রেন্ডার সার্ভারের সাথে টেলিগ্রাম কানেক্ট করার লজিক (Webhook)
 @server.route('/' + TOKEN, methods=['POST'])
 def getMessage():
     json_string = request.get_data().decode('utf-8')
@@ -64,6 +64,7 @@ def getMessage():
 @server.route("/")
 def webhook():
     bot.remove_webhook()
+    # আপনার রেন্ডার ইউআরএলটি এখানে সঠিকভাবে দেওয়া হয়েছে
     bot.set_webhook(url='https://my-bomber-project.onrender.com/' + TOKEN)
     return "Bot is Alive!", 200
 
