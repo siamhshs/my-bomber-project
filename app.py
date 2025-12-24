@@ -6,7 +6,7 @@ from threading import Thread
 from flask import Flask
 
 # --- সেটিংস ---
-API_TOKEN = 'আপনার_বোট_টোকেন_এখানে_দিন' # আপনার টোকেনটি এখানে দিন
+API_TOKEN = '8475845199:AAHX1diGmHBepMcYc8NSWQeXNVn_r2jBhjI' # আপনার টোকেনটি এখানে দিন
 bot = telebot.TeleBot(API_TOKEN)
 user_data = {}
 
