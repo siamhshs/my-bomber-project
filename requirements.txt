@@ -1,5 +1,4 @@
-ami import os  # 'i' ছোট হাতের হবে
-import telebot
-from flask import Flask, request
-
-# বাকি কোড অপরিবর্তিত থাকবে...
+pyTelegramBotAPI
+flask
+requests
+gunicorn
